@@ -1,0 +1,49 @@
+[project]
+name = "clipper-cli"
+version = "0.1.0"
+description = "CLI tool to cut long videos into viral clips using AI"
+authors = [
+    {name = "Hammam Firdaus", email = "hammamxalf@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # CLI & UI
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    
+    # Transcription - Offline
+    "openai-whisper>=20231117",
+    
+    # Transcription - Cloud
+    "assemblyai>=0.33.0",
+    
+    # LLM Providers
+    "ollama>=0.3.0",
+    "openai>=1.0.0",
+    "google-generativeai>=0.8.0",
+    "anthropic>=0.39.0",
+    
+    # Video Processing
+    "moviepy>=1.0.3",
+    
+    # Core
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "aiofiles>=23.0.0",
+]
+
+[project.scripts]
+clipper = "clipper_cli.main:app"
+
+[tool.poetry]
+packages = [{include = "clipper_cli", from = "src"}]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
