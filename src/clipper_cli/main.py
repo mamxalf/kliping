@@ -469,5 +469,33 @@ def version():
     console.print(f"[bold]Clipper CLI[/bold] v{__version__}")
 
 
+@app.command(name="interactive")
+def interactive_mode():
+    """Start interactive mode."""
+    from clipper_cli.interactive import start_interactive
+    start_interactive()
+
+
+def main():
+    """Main entry point with license check and interactive default."""
+    import sys
+    from clipper_cli.license import get_license_manager
+    
+    # Check license first
+    license_mgr = get_license_manager()
+    if not license_mgr.is_activated():
+        from clipper_cli.interactive import activate_license
+        if not activate_license():
+            sys.exit(1)
+    
+    # If no arguments, run interactive mode
+    if len(sys.argv) == 1:
+        from clipper_cli.interactive import start_interactive
+        start_interactive()
+    else:
+        app()
+
+
 if __name__ == "__main__":
-    app()
+    main()
+
