@@ -38,17 +38,17 @@ def clean_build_artifacts():
         print(f"Removing {pycache}/")
         shutil.rmtree(pycache)
     
-    print("✅ Build artifacts cleaned")
+    print("[OK] Build artifacts cleaned")
 
 
 def check_pyinstaller():
     """Check if PyInstaller is installed."""
     try:
         import PyInstaller
-        print(f"✅ PyInstaller version: {PyInstaller.__version__}")
+        print(f"[OK] PyInstaller version: {PyInstaller.__version__}")
         return True
     except ImportError:
-        print("❌ PyInstaller not found. Install with: pip install pyinstaller")
+        print("[ERROR] PyInstaller not found. Install with: pip install pyinstaller")
         return False
 
 
@@ -66,7 +66,7 @@ def build_executable(onefile: bool = False, clean: bool = False):
     # Ensure we're in the project root
     os.chdir(project_root)
     
-    print("\n🔨 Building Clipper CLI executable...\n")
+    print("\n[BUILD] Building Clipper CLI executable...\n")
     
     # Build command
     if onefile:
@@ -107,7 +107,7 @@ def build_executable(onefile: bool = False, clean: bool = False):
     result = subprocess.run(cmd)
     
     if result.returncode == 0:
-        print("\n✅ Build successful!")
+        print("\n[OK] Build successful!")
         
         if onefile:
             if sys.platform == 'win32':
@@ -122,12 +122,12 @@ def build_executable(onefile: bool = False, clean: bool = False):
         
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print(f"\n📦 Executable: {exe_path}")
-            print(f"📊 Size: {size_mb:.1f} MB")
+            print(f"\n[OUTPUT] Executable: {exe_path}")
+            print(f"[INFO] Size: {size_mb:.1f} MB")
         
         return True
     else:
-        print("\n❌ Build failed!")
+        print("\n[ERROR] Build failed!")
         return False
 
 
