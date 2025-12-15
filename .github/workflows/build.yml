@@ -1,0 +1,253 @@
+name: Build Clipper CLI
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag for release'
+        required: false
+        default: 'dev'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  build-windows:
+    name: Build Windows Executable
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-windows-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            venv-windows-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+      
+      - name: Install dependencies
+        run: |
+          poetry install --with build
+      
+      - name: Build executable
+        run: |
+          poetry run python build.py --onefile --clean
+      
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.inputs.version || 'dev' }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Rename executable
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          Move-Item -Path "dist/clipper.exe" -Destination "dist/clipper-$version-windows.exe"
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipper-windows-${{ steps.version.outputs.version }}
+          path: dist/clipper-*.exe
+          retention-days: 30
+
+  # Optional: Build for macOS
+  build-macos:
+    name: Build macOS Executable
+    runs-on: macos-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-macos-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            venv-macos-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+      
+      - name: Install dependencies
+        run: |
+          poetry install --with build
+      
+      - name: Build executable
+        run: |
+          poetry run python build.py --onefile --clean
+      
+      - name: Get version
+        id: version
+        run: |
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Rename and package
+        run: |
+          mv dist/clipper dist/clipper-${{ steps.version.outputs.version }}-macos
+          chmod +x dist/clipper-${{ steps.version.outputs.version }}-macos
+          cd dist && zip clipper-${{ steps.version.outputs.version }}-macos.zip clipper-${{ steps.version.outputs.version }}-macos
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipper-macos-${{ steps.version.outputs.version }}
+          path: dist/clipper-*.zip
+          retention-days: 30
+
+  # Optional: Build for Linux
+  build-linux:
+    name: Build Linux Executable
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-linux-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            venv-linux-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+      
+      - name: Install dependencies
+        run: |
+          poetry install --with build
+      
+      - name: Build executable
+        run: |
+          poetry run python build.py --onefile --clean
+      
+      - name: Get version
+        id: version
+        run: |
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Rename and package
+        run: |
+          mv dist/clipper dist/clipper-${{ steps.version.outputs.version }}-linux
+          chmod +x dist/clipper-${{ steps.version.outputs.version }}-linux
+          cd dist && tar -czvf clipper-${{ steps.version.outputs.version }}-linux.tar.gz clipper-${{ steps.version.outputs.version }}-linux
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipper-linux-${{ steps.version.outputs.version }}
+          path: dist/clipper-*.tar.gz
+          retention-days: 30
+
+  # Create GitHub Release
+  release:
+    name: Create Release
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Get version
+        id: version
+        run: |
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: List artifacts
+        run: |
+          find artifacts -type f
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Clipper CLI v${{ steps.version.outputs.version }}
+          draft: true
+          prerelease: false
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz
+          body: |
+            ## Clipper CLI v${{ steps.version.outputs.version }}
+            
+            ### 🎬 Cut Long Videos into Viral Clips using AI
+            
+            #### Downloads
+            
+            | Platform | File |
+            |----------|------|
+            | Windows | `clipper-${{ steps.version.outputs.version }}-windows.exe` |
+            | macOS | `clipper-${{ steps.version.outputs.version }}-macos.zip` |
+            | Linux | `clipper-${{ steps.version.outputs.version }}-linux.tar.gz` |
+            
+            #### Requirements
+            
+            - FFmpeg must be installed on your system
+            - A valid license key is required to run the application
+            
+            #### First Run
+            
+            1. Download the appropriate file for your platform
+            2. Run the executable
+            3. Enter your license key when prompted
+            4. Start processing videos!
+            
+            ---
+            
+            **Need a license key?** Contact us at [your-email@example.com]

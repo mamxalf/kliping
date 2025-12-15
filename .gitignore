@@ -30,7 +30,16 @@ MANIFEST
 #   Usually these files are written by a python script from a template
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# Keep clipper.spec for builds
+!clipper.spec
+
+# Clipper CLI specific
+# DO NOT commit these files!
+keygen.py
+test_keys.txt
+*_keys.txt
+*.license
+license.key
 
 # Installer logs
 pip-log.txt
