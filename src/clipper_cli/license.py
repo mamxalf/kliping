@@ -238,12 +238,12 @@ class LicenseManager:
         info = self.get_license_info()
         
         if info is None:
-            return "❌ Not Activated"
+            return "[X] Not Activated"
         
         if not validate_license_key(info.key):
-            return "⚠️ Invalid License"
+            return "[!] Invalid License"
         
-        return f"✅ Licensed ({info.masked_key})"
+        return f"[OK] Licensed ({info.masked_key})"
 
 
 # Global instance for easy access

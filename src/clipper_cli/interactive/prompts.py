@@ -34,15 +34,15 @@ def prompt_license_key() -> Optional[str]:
 def prompt_main_menu() -> str:
     """Display main menu and get selection."""
     choices = [
-        Choice(value="process", name="🎬 Process Single Video"),
-        Choice(value="batch", name="📁 Batch Process Videos"),
+        Choice(value="process", name="[1] Process Single Video"),
+        Choice(value="batch", name="[2] Batch Process Videos"),
         Separator(),
-        Choice(value="settings", name="⚙️  Settings"),
-        Choice(value="providers", name="📋 View Providers"),
-        Choice(value="check", name="🔍 System Check"),
-        Choice(value="license", name="🔑 License Info"),
+        Choice(value="settings", name="[3] Settings"),
+        Choice(value="providers", name="[4] View Providers"),
+        Choice(value="check", name="[5] System Check"),
+        Choice(value="license", name="[6] License Info"),
         Separator(),
-        Choice(value="exit", name="🚪 Exit"),
+        Choice(value="exit", name="[X] Exit"),
     ]
     
     return inquirer.select(
@@ -55,11 +55,11 @@ def prompt_main_menu() -> str:
 def prompt_settings_menu() -> str:
     """Display settings menu and get selection."""
     choices = [
-        Choice(value="api_keys", name="🔐 API Keys"),
-        Choice(value="defaults", name="📊 Default Settings"),
-        Choice(value="providers", name="🔄 Default Providers"),
+        Choice(value="api_keys", name="[1] API Keys"),
+        Choice(value="defaults", name="[2] Default Settings"),
+        Choice(value="providers", name="[3] Default Providers"),
         Separator(),
-        Choice(value="back", name="⬅️  Back to Main Menu"),
+        Choice(value="back", name="[<] Back to Main Menu"),
     ]
     
     return inquirer.select(
@@ -75,9 +75,9 @@ def prompt_video_file(start_path: str = ".") -> Optional[str]:
     method = inquirer.select(
         message="How would you like to select the video?",
         choices=[
-            Choice(value="browse", name="📁 Browse files"),
-            Choice(value="path", name="📝 Enter path manually"),
-            Choice(value="back", name="⬅️  Back"),
+            Choice(value="browse", name="[DIR] Browse files"),
+            Choice(value="path", name="[PATH] Enter path manually"),
+            Choice(value="back", name="[<] Back"),
         ],
     ).execute()
     
@@ -100,13 +100,13 @@ def prompt_video_file(start_path: str = ".") -> Optional[str]:
         
         # Add parent directory option
         if current_dir.parent != current_dir:
-            items.append(Choice(value="..", name="📁 .. (Parent Directory)"))
+            items.append(Choice(value="..", name="[DIR] .. (Parent Directory)"))
         
         # List directories first
         try:
             for item in sorted(current_dir.iterdir()):
                 if item.is_dir() and not item.name.startswith("."):
-                    items.append(Choice(value=str(item), name=f"📁 {item.name}"))
+                    items.append(Choice(value=str(item), name=f"[DIR] {item.name}"))
         except PermissionError:
             pass
         
@@ -115,7 +115,7 @@ def prompt_video_file(start_path: str = ".") -> Optional[str]:
             for item in sorted(current_dir.iterdir()):
                 if item.is_file() and item.suffix.lower() in VIDEO_EXTENSIONS:
                     size_mb = item.stat().st_size / (1024 * 1024)
-                    items.append(Choice(value=str(item), name=f"🎬 {item.name} ({size_mb:.1f} MB)"))
+                    items.append(Choice(value=str(item), name=f"[VIDEO] {item.name} ({size_mb:.1f} MB)"))
         except PermissionError:
             pass
         
@@ -123,7 +123,7 @@ def prompt_video_file(start_path: str = ".") -> Optional[str]:
             items.append(Choice(value="empty", name="(No video files found)"))
         
         items.append(Separator())
-        items.append(Choice(value="cancel", name="❌ Cancel"))
+        items.append(Choice(value="cancel", name="[X] Cancel"))
         
         selection = inquirer.select(
             message=f"Select video file ({current_dir}):",
@@ -155,9 +155,9 @@ def prompt_batch_folder(start_path: str = ".") -> Optional[str]:
     method = inquirer.select(
         message="How would you like to select the folder?",
         choices=[
-            Choice(value="browse", name="📁 Browse folders"),
-            Choice(value="path", name="📝 Enter path manually"),
-            Choice(value="back", name="⬅️  Back"),
+            Choice(value="browse", name="[DIR] Browse folders"),
+            Choice(value="path", name="[PATH] Enter path manually"),
+            Choice(value="back", name="[<] Back"),
         ],
     ).execute()
     
@@ -184,13 +184,13 @@ def prompt_batch_folder(start_path: str = ".") -> Optional[str]:
         
         items.append(Choice(
             value="select", 
-            name=f"✅ Select this folder ({video_count} videos)"
+            name=f"[OK] Select this folder ({video_count} videos)"
         ))
         items.append(Separator())
         
         # Add parent directory option
         if current_dir.parent != current_dir:
-            items.append(Choice(value="..", name="📁 .. (Parent Directory)"))
+            items.append(Choice(value="..", name="[DIR] .. (Parent Directory)"))
         
         # List directories
         try:
@@ -198,12 +198,12 @@ def prompt_batch_folder(start_path: str = ".") -> Optional[str]:
                 if item.is_dir() and not item.name.startswith("."):
                     sub_video_count = sum(1 for f in item.glob("*") 
                                          if f.is_file() and f.suffix.lower() in VIDEO_EXTENSIONS)
-                    items.append(Choice(value=str(item), name=f"📁 {item.name} ({sub_video_count} videos)"))
+                    items.append(Choice(value=str(item), name=f"[DIR] {item.name} ({sub_video_count} videos)"))
         except PermissionError:
             pass
         
         items.append(Separator())
-        items.append(Choice(value="cancel", name="❌ Cancel"))
+        items.append(Choice(value="cancel", name="[X] Cancel"))
         
         selection = inquirer.select(
             message=f"Select folder ({current_dir}):",
@@ -248,12 +248,12 @@ def prompt_transcriber() -> str:
     choices = [
         Choice(
             value="whisper",
-            name=f"🎤 Whisper (Offline) {'✓' if whisper_available else '✗ Not installed'}",
+            name=f"[LOCAL] Whisper (Offline) {'[OK]' if whisper_available else '[X] Not installed'}",
             enabled=whisper_available,
         ),
         Choice(
             value="assemblyai",
-            name=f"☁️  AssemblyAI (Cloud) {'✓' if aai_available else '✗ No API key'}",
+            name=f"[CLOUD] AssemblyAI {'[OK]' if aai_available else '[X] No API key'}",
             enabled=aai_available,
         ),
     ]
@@ -274,21 +274,21 @@ def prompt_llm_provider() -> tuple[str, Optional[str]]:
     choices = []
     default = None
     
-    provider_icons = {
-        "ollama": "🦙",
-        "openai": "🤖",
-        "gemini": "✨",
-        "claude": "🧠",
+    provider_labels = {
+        "ollama": "[LOCAL]",
+        "openai": "[CLOUD]",
+        "gemini": "[CLOUD]",
+        "claude": "[CLOUD]",
     }
     
     for name, info in providers.items():
-        icon = provider_icons.get(name.lower(), "🔹")
-        status = "✓" if info["available"] else "✗"
+        label = provider_labels.get(name.lower(), "[LLM]")
+        status = "[OK]" if info["available"] else "[X]"
         model = info.get("default_model", "")
         
         choice = Choice(
             value=name.lower(),
-            name=f"{icon} {name.title()} ({info['type']}) {status} - {model}",
+            name=f"{label} {name.title()} ({info['type']}) {status} - {model}",
             enabled=info["available"],
         )
         choices.append(choice)
@@ -348,15 +348,15 @@ def prompt_clip_settings() -> dict:
     language = inquirer.select(
         message="Video language:",
         choices=[
-            Choice(value="auto", name="🌐 Auto-detect"),
-            Choice(value="en", name="🇺🇸 English"),
-            Choice(value="id", name="🇮🇩 Indonesian"),
-            Choice(value="es", name="🇪🇸 Spanish"),
-            Choice(value="fr", name="🇫🇷 French"),
-            Choice(value="de", name="🇩🇪 German"),
-            Choice(value="ja", name="🇯🇵 Japanese"),
-            Choice(value="ko", name="🇰🇷 Korean"),
-            Choice(value="zh", name="🇨🇳 Chinese"),
+            Choice(value="auto", name="[AUTO] Auto-detect"),
+            Choice(value="en", name="[EN] English"),
+            Choice(value="id", name="[ID] Indonesian"),
+            Choice(value="es", name="[ES] Spanish"),
+            Choice(value="fr", name="[FR] French"),
+            Choice(value="de", name="[DE] German"),
+            Choice(value="ja", name="[JA] Japanese"),
+            Choice(value="ko", name="[KO] Korean"),
+            Choice(value="zh", name="[ZH] Chinese"),
         ],
         default="auto",
     ).execute()
@@ -396,7 +396,7 @@ def prompt_api_key_setting() -> Optional[tuple[str, str]]:
         Choice(value="GEMINI_API_KEY", name="Gemini API Key"),
         Choice(value="ANTHROPIC_API_KEY", name="Anthropic API Key"),
         Separator(),
-        Choice(value="back", name="⬅️  Back"),
+        Choice(value="back", name="[<] Back"),
     ]
     
     key_name = inquirer.select(
@@ -452,7 +452,7 @@ def prompt_whisper_model() -> str:
     """Prompt user to select Whisper model size."""
     choices = [
         Choice(value="tiny", name="Tiny (fastest, least accurate)"),
-        Choice(value="base", name="Base (balanced) ⭐"),
+        Choice(value="base", name="Base (balanced) *"),
         Choice(value="small", name="Small (better accuracy)"),
         Choice(value="medium", name="Medium (good accuracy)"),
         Choice(value="large", name="Large (best accuracy, slowest)"),

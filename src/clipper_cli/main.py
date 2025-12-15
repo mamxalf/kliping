@@ -314,9 +314,13 @@ def check():
     
     # MoviePy
     try:
-        import moviepy
+        # Suppress imageio warnings during import
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            import moviepy
         moviepy_ok = True
-    except ImportError:
+    except (ImportError, Exception):
         moviepy_ok = False
     checks.append(("MoviePy", moviepy_ok, "For video processing"))
     
@@ -337,7 +341,7 @@ def check():
     table.add_column("Notes")
     
     for name, ok, notes in checks:
-        status = "[green]✓ OK[/green]" if ok else "[red]✗ Missing[/red]"
+        status = "[green]OK[/green]" if ok else "[red]Missing[/red]"
         table.add_row(name, status, notes)
     
     console.print(table)
@@ -358,7 +362,7 @@ def check():
     
     for name, value in api_keys:
         if value:
-            status = f"[green]✓ Set[/green] ({value[:8]}...)"
+            status = f"[green]Set[/green] ({value[:8]}...)"
         else:
             status = "[dim]Not set[/dim]"
         table.add_row(name, status)
@@ -366,7 +370,7 @@ def check():
     console.print(table)
     
     # Config file location
-    console.print(f"\n📁 Config file: [cyan]{get_env_file_path()}[/cyan]")
+    console.print(f"\n[INFO] Config file: [cyan]{get_env_file_path()}[/cyan]")
 
 
 @app.command()
