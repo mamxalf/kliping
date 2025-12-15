@@ -89,6 +89,10 @@ a = Analysis(
         # Video/Audio
         'moviepy',
         'moviepy.editor',
+        'imageio',
+        'imageio.core',
+        'imageio.plugins',
+        'imageio_ffmpeg',
         
         # Whisper (if included - makes binary large)
         # Uncomment if you want to bundle whisper

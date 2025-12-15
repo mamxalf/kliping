@@ -88,11 +88,18 @@ def build_executable(onefile: bool = False, clean: bool = False):
             '--hidden-import', 'pydantic',
             '--hidden-import', 'pydantic_settings',
             '--hidden-import', 'moviepy',
+            '--hidden-import', 'imageio',
+            '--hidden-import', 'imageio.core',
+            '--hidden-import', 'imageio.plugins',
+            '--hidden-import', 'imageio_ffmpeg',
             '--hidden-import', 'assemblyai',
             '--hidden-import', 'ollama',
             '--hidden-import', 'openai',
             '--hidden-import', 'anthropic',
             '--hidden-import', 'google.generativeai',
+            # Collect data for imageio
+            '--collect-data', 'imageio',
+            '--collect-submodules', 'imageio',
             'src/clipper_cli/interactive/app.py',
         ]
     else:
