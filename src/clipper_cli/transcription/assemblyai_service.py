@@ -56,18 +56,37 @@ class AssemblyAITranscriber(BaseTranscriber):
         
         Returns:
             TranscriptResult with segments and metadata.
+        
+        Note:
+            sentiment_analysis and auto_chapters are only available for English.
+            They will be automatically disabled for other languages.
         """
         import assemblyai as aai
         
         # Configure API key
         aai.settings.api_key = self.api_key
         
+        # Languages that support advanced features (sentiment, chapters)
+        # See: https://www.assemblyai.com/docs/speech-to-text/speech-recognition
+        ENGLISH_CODES = {"en", "en_au", "en_uk", "en_us"}
+        
+        # Determine if we can use advanced features
+        is_english = language.lower() in ENGLISH_CODES if language != "auto" else False
+        
+        # Disable advanced features for non-English languages
+        use_sentiment = sentiment_analysis and is_english
+        use_chapters = auto_chapters and is_english
+        
         # Build transcription config
         config_kwargs = {
             "speaker_labels": speaker_labels,
-            "auto_chapters": auto_chapters,
-            "sentiment_analysis": sentiment_analysis,
         }
+        
+        # Only add advanced features if language supports them
+        if use_sentiment:
+            config_kwargs["sentiment_analysis"] = True
+        if use_chapters:
+            config_kwargs["auto_chapters"] = True
         
         if language != "auto":
             config_kwargs["language_code"] = language
@@ -158,7 +177,7 @@ class AssemblyAITranscriber(BaseTranscriber):
         
         return TranscriptResult(
             segments=segments,
-            language=transcript.language_code or "unknown",
+            language=language if language != "auto" else "detected",
             duration=duration,
             full_text=transcript.text or "",
             summary=transcript.summary if hasattr(transcript, 'summary') else None,

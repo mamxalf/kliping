@@ -108,8 +108,6 @@ class VideoProcessor:
             fps=16000,  # Whisper expects 16kHz
             nbytes=2,
             codec="pcm_s16le",
-            verbose=False,
-            logger=None,
         )
         
         self._audio_path = output_path
