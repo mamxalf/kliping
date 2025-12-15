@@ -8,6 +8,11 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.live import Live
+from rich.panel import Panel
+from rich.text import Text
+
 from clipper_cli import __version__
 from clipper_cli.license import get_license_manager, LicenseManager
 from clipper_cli.config import settings, save_config_value, get_env_file_path
@@ -44,6 +49,15 @@ from clipper_cli.interactive.prompts import (
     prompt_whisper_model,
     prompt_continue_or_exit,
 )
+
+
+def create_spinner(description: str):
+    """Create a spinner progress bar."""
+    return Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+    )
 
 
 def activate_license() -> bool:
@@ -149,19 +163,20 @@ def _run_video_processing(config: dict) -> None:
     
     video_path = Path(config["video_path"])
     
-    console.print(f"\n🎬 Processing: [cyan]{video_path.name}[/cyan]\n")
+    console.print(f"\n[VIDEO] Processing: [cyan]{video_path.name}[/cyan]\n")
     
     start_time = time.time()
     
     try:
         with VideoProcessor(str(video_path)) as processor:
-            # Extract audio
-            console.print("🔊 Extracting audio...", end=" ")
-            audio_path = processor.extract_audio()
-            console.print("[green]✓[/green]")
+            # Extract audio with spinner
+            with create_spinner("Extracting audio...") as progress:
+                task = progress.add_task("Extracting audio...", total=None)
+                audio_path = processor.extract_audio()
+            console.print("[green][OK][/green] Audio extracted")
             
-            # Transcribe
-            console.print(f"📝 Transcribing with {config['transcriber'].title()}...")
+            # Transcribe with spinner
+            console.print(f"\n[TRANSCRIBE] Using {config['transcriber'].title()}...")
             
             if config["transcriber"] == "whisper":
                 transcriber = WhisperTranscriber(model_name=config["whisper_model"])
@@ -172,14 +187,17 @@ def _run_video_processing(config: dict) -> None:
                 show_error_message(f"{config['transcriber'].title()} is not available.")
                 return
             
-            transcript = transcriber.transcribe(audio_path, language=config["language"])
+            with create_spinner(f"Transcribing video (this may take a while)...") as progress:
+                task = progress.add_task("Transcribing...", total=None)
+                transcript = transcriber.transcribe(audio_path, language=config["language"])
             
-            console.print(f"   └─ Language: {transcript.language}")
-            console.print(f"   └─ Duration: {format_duration(transcript.duration)}")
-            console.print(f"   └─ Segments: {len(transcript.segments)}")
+            console.print(f"  [dim]Language:[/dim] {transcript.language}")
+            console.print(f"  [dim]Duration:[/dim] {format_duration(transcript.duration)}")
+            console.print(f"  [dim]Segments:[/dim] {len(transcript.segments)}")
+            console.print("[green][OK][/green] Transcription complete")
             
-            # Analyze for viral moments
-            console.print(f"\n🔍 Analyzing for viral moments...")
+            # Analyze for viral moments with spinner
+            console.print(f"\n[ANALYZE] Finding viral moments...")
             
             llm_type = LLMProviderType(config["llm_provider"])
             llm_provider = create_llm_provider(llm_type, model=config.get("llm_model"))
@@ -188,31 +206,51 @@ def _run_video_processing(config: dict) -> None:
                 show_error_message(f"{llm_provider.name} is not available.")
                 return
             
-            console.print(f"   └─ Using model: {llm_provider.model}")
+            console.print(f"  [dim]Using model:[/dim] {llm_provider.model}")
             
-            detector = ViralDetector(llm_provider)
-            potential_clips = detector.detect_viral_moments_sync(
-                transcript,
-                num_clips=config["num_clips"],
-                min_duration=config["min_duration"],
-                max_duration=config["max_duration"],
-            )
+            with create_spinner("Analyzing transcript with AI...") as progress:
+                task = progress.add_task("Analyzing...", total=None)
+                detector = ViralDetector(llm_provider)
+                potential_clips = detector.detect_viral_moments_sync(
+                    transcript,
+                    num_clips=config["num_clips"],
+                    min_duration=config["min_duration"],
+                    max_duration=config["max_duration"],
+                )
             
-            console.print(f"   └─ Found {len(potential_clips)} potential clips")
+            console.print(f"  [dim]Found:[/dim] {len(potential_clips)} potential clips")
+            console.print("[green][OK][/green] Analysis complete")
             
             if not potential_clips:
                 show_warning_message("No potential viral clips found in the video.")
                 return
             
-            # Generate clips
-            console.print(f"\n✂️  Generating clips...")
+            # Generate clips with progress
+            console.print(f"\n[CLIPS] Generating {len(potential_clips)} clips...")
             
             clipper = ClipGenerator(str(video_path), config["output_dir"])
-            clip_results = clipper.generate_clips(potential_clips, show_progress=True)
+            
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Generating clips...", total=len(potential_clips))
+                clip_results = []
+                
+                for clip in potential_clips:
+                    result = clipper.generate_clip(clip)
+                    if result:
+                        clip_results.append(result)
+                    progress.advance(task)
+            
+            console.print("[green][OK][/green] Clips generated")
             
             # Show results
             elapsed = time.time() - start_time
-            console.print(f"\n⏱️  Completed in {format_duration(elapsed)}")
+            console.print(f"\n[TIME] Completed in {format_duration(elapsed)}")
             
             show_clip_results(clip_results, config["output_dir"])
     
@@ -248,9 +286,9 @@ def process_batch_videos() -> None:
     # Confirm
     from InquirerPy import inquirer
     
-    console.print(f"\n📁 Folder: [cyan]{folder_path}[/cyan]")
-    console.print(f"🔧 Transcriber: {transcriber.title()}")
-    console.print(f"🤖 LLM: {llm_provider.title()}")
+    console.print(f"\n[DIR] Folder: [cyan]{folder_path}[/cyan]")
+    console.print(f"[CONFIG] Transcriber: {transcriber.title()}")
+    console.print(f"[CONFIG] LLM: {llm_provider.title()}")
     console.print()
     
     if not inquirer.confirm("Start batch processing?", default=True).execute():
@@ -275,14 +313,17 @@ def process_batch_videos() -> None:
     )
     
     processor = BatchProcessor(config, output_dir)
-    result = processor.process_batch(folder_path)
+    
+    with create_spinner("Processing batch...") as progress:
+        task = progress.add_task("Processing videos...", total=None)
+        result = processor.process_batch(folder_path)
     
     # Generate and print report
     reporter = BatchReporter(output_dir)
     report_path = reporter.generate_report(result, format="json")
     reporter.print_summary(result)
     
-    console.print(f"\n📄 Report saved: [cyan]{report_path}[/cyan]")
+    console.print(f"\n[REPORT] Report saved: [cyan]{report_path}[/cyan]")
 
 
 def show_settings() -> None:
@@ -343,35 +384,38 @@ def show_providers() -> None:
     from clipper_cli.transcription import WhisperTranscriber, AssemblyAITranscriber
     from clipper_cli.llm.factory import get_available_providers
     
-    # Get transcriber status
-    try:
-        whisper = WhisperTranscriber()
-        whisper_available = whisper.is_available()
-    except Exception:
-        whisper_available = False
-    
-    try:
-        aai = AssemblyAITranscriber()
-        aai_available = aai.is_available()
-    except Exception:
-        aai_available = False
-    
-    transcribers = [
-        {"name": "Whisper", "type": "Offline", "available": whisper_available},
-        {"name": "AssemblyAI", "type": "Cloud", "available": aai_available},
-    ]
-    
-    # Get LLM providers
-    providers_info = get_available_providers()
-    llm_providers = []
-    
-    for name, info in providers_info.items():
-        llm_providers.append({
-            "name": name,
-            "type": info["type"],
-            "available": info["available"],
-            "model": info.get("default_model", "-"),
-        })
+    with create_spinner("Checking providers...") as progress:
+        task = progress.add_task("Checking...", total=None)
+        
+        # Get transcriber status
+        try:
+            whisper = WhisperTranscriber()
+            whisper_available = whisper.is_available()
+        except Exception:
+            whisper_available = False
+        
+        try:
+            aai = AssemblyAITranscriber()
+            aai_available = aai.is_available()
+        except Exception:
+            aai_available = False
+        
+        transcribers = [
+            {"name": "Whisper", "type": "Offline", "available": whisper_available},
+            {"name": "AssemblyAI", "type": "Cloud", "available": aai_available},
+        ]
+        
+        # Get LLM providers
+        providers_info = get_available_providers()
+        llm_providers = []
+        
+        for name, info in providers_info.items():
+            llm_providers.append({
+                "name": name,
+                "type": info["type"],
+                "available": info["available"],
+                "model": info.get("default_model", "-"),
+            })
     
     show_providers_status(transcribers, llm_providers)
     

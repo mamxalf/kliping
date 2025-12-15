@@ -281,6 +281,9 @@ def prompt_llm_provider() -> tuple[str, Optional[str]]:
         "claude": "[CLOUD]",
     }
     
+    # Store mapping from lowercase to original key
+    key_mapping = {name.lower(): name for name in providers.keys()}
+    
     for name, info in providers.items():
         label = provider_labels.get(name.lower(), "[LLM]")
         status = "[OK]" if info["available"] else "[X]"
@@ -310,9 +313,12 @@ def prompt_llm_provider() -> tuple[str, Optional[str]]:
     
     model = None
     if use_custom:
+        # Use the key mapping to get the correct provider key
+        original_key = key_mapping.get(provider, provider)
+        default_model = providers.get(original_key, {}).get("default_model", "")
         model = inquirer.text(
             message="Enter model name:",
-            default=providers[provider.title()].get("default_model", ""),
+            default=default_model,
         ).execute()
     
     return provider, model
