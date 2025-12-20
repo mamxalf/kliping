@@ -97,6 +97,7 @@ def main_menu() -> str:
         "🤖 Kelola Ollama (AI Lokal)",
         "🔐 Status Lisensi",
         "❓ Bantuan",
+        "ℹ️  Tentang Aplikasi",
         "🚪 Keluar"
     ]
     
@@ -397,6 +398,49 @@ def menu_help():
 • Ctrl+C : Batal/Keluar
     """
     console.print(help_text)
+    
+    questionary.press_any_key_to_continue(
+        "Tekan Enter untuk kembali...",
+        style=custom_style
+    ).ask()
+
+
+def menu_about():
+    """Display about information."""
+    clear_screen()
+    console.print("[bold cyan]ℹ️  TENTANG APLIKASI[/bold cyan]\n")
+    
+    about_text = """
+[bold]Clipper CLI[/bold]
+Version 1.0.0
+
+[bold cyan]Deskripsi:[/bold cyan]
+Tool untuk menganalisis video podcast, menemukan momen-momen
+yang berpotensi viral, dan memotongnya otomatis menjadi
+short-form content untuk TikTok, Instagram Reels, YouTube Shorts.
+
+[bold cyan]Fitur Utama:[/bold cyan]
+• Transcription otomatis dengan Whisper AI
+• Analisis viral menggunakan AI (Ollama/OpenAI/Gemini)
+• Pemotongan video otomatis dengan FFmpeg
+• Interface TUI yang mudah digunakan
+
+[bold cyan]Tech Stack:[/bold cyan]
+• [dim]Speech-to-Text:[/dim] Faster Whisper
+• [dim]AI Analysis:[/dim] Ollama, OpenAI, Google Gemini
+• [dim]Video Processing:[/dim] FFmpeg
+• [dim]TUI Framework:[/dim] Rich, Questionary
+
+[bold cyan]Dikembangkan oleh:[/bold cyan]
+FPK Creative
+
+[bold cyan]Website:[/bold cyan]
+https://fpkcreative.space
+
+[bold cyan]Dukungan:[/bold cyan]
+Hubungi admin untuk bantuan teknis
+    """
+    console.print(about_text)
     
     questionary.press_any_key_to_continue(
         "Tekan Enter untuk kembali...",
@@ -739,6 +783,9 @@ def main():
             
             elif "Lisensi" in choice:
                 menu_license()
+            
+            elif "Tentang" in choice:
+                menu_about()
     
     except KeyboardInterrupt:
         console.print("\n[yellow]Dibatalkan.[/yellow]")
