@@ -1,0 +1,28 @@
+[project]
+name = "clipper-cli"
+version = "0.1.0"
+description = "Viral Video Clipper - Analyze and clip videos for viral potential"
+authors = [
+    {name = "FPK Creative"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "faster-whisper (>=1.2.1,<2.0.0)",
+    "questionary (>=2.1.1,<3.0.0)",
+    "rich (>=14.2.0,<15.0.0)",
+    "ffmpeg-python (>=0.2.0,<0.3.0)",
+    "ollama (>=0.6.1,<0.7.0)",
+    "openai (>=2.14.0,<3.0.0)",
+    "google-generativeai (>=0.8.6,<0.9.0)"
+]
+
+[project.scripts]
+clipper = "clipper_cli.main:main"
+
+[tool.poetry.group.dev.dependencies]
+pyinstaller = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
