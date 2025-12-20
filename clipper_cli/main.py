@@ -27,6 +27,7 @@ from .llm_providers import (
 from .analyzer import ViralAnalyzer, ViralClip
 from .clipper import VideoClipper
 from .utils import validate_video_file, format_time_display
+from .license import is_licensed, activate_license, get_license_info, deactivate_license
 
 console = Console()
 
@@ -94,6 +95,7 @@ def main_menu() -> str:
         "🎬 Mulai Clip Video",
         "⚙️  Pengaturan",
         "🤖 Kelola Ollama (AI Lokal)",
+        "🔐 Status Lisensi",
         "❓ Bantuan",
         "🚪 Keluar"
     ]
@@ -637,9 +639,83 @@ def run_clip_video():
     ).ask()
 
 
+def show_activation_screen() -> bool:
+    """Show license activation screen. Returns True if activated."""
+    clear_screen()
+    console.print("[bold cyan]🔐 AKTIVASI LISENSI[/bold cyan]\n")
+    console.print("Software ini membutuhkan lisensi untuk digunakan.")
+    console.print("Hubungi admin untuk mendapatkan serial key.\n")
+    
+    serial_key = questionary.text(
+        "Masukkan Serial Key (XXXX-XXXX-XXXX-XXXX):",
+        style=custom_style
+    ).ask()
+    
+    if not serial_key:
+        return False
+    
+    success, message = activate_license(serial_key)
+    
+    if success:
+        console.print(f"\n[green]✓ {message}[/green]")
+        questionary.press_any_key_to_continue(
+            "Tekan Enter untuk melanjutkan...",
+            style=custom_style
+        ).ask()
+        return True
+    else:
+        console.print(f"\n[red]❌ {message}[/red]")
+        questionary.press_any_key_to_continue(
+            "Tekan Enter untuk coba lagi...",
+            style=custom_style
+        ).ask()
+        return False
+
+
+def menu_license():
+    """License management menu."""
+    clear_screen()
+    console.print("[bold cyan]🔐 STATUS LISENSI[/bold cyan]\n")
+    
+    license_info = get_license_info()
+    
+    if license_info:
+        console.print("[green]✓ Lisensi Aktif[/green]\n")
+        console.print(f"Serial Key: [cyan]{license_info.serial_key}[/cyan]")
+        console.print(f"Diaktivasi: [dim]{license_info.activated_at}[/dim]")
+        console.print(f"Machine ID: [dim]{license_info.machine_id}[/dim]")
+    else:
+        console.print("[red]✗ Tidak ada lisensi aktif[/red]")
+    
+    console.print("")
+    questionary.press_any_key_to_continue(
+        "Tekan Enter untuk kembali...",
+        style=custom_style
+    ).ask()
+
+
 def main():
     """Main entry point."""
-    display_banner()
+    # Check license on startup
+    if not is_licensed():
+        console.print("")
+        display_banner()
+        console.print("\n[yellow]⚠️  Software ini memerlukan lisensi.[/yellow]\n")
+        
+        # Keep asking for activation until success or user quits
+        while True:
+            if show_activation_screen():
+                break
+            
+            retry = questionary.confirm(
+                "Coba aktivasi lagi?",
+                default=True,
+                style=custom_style
+            ).ask()
+            
+            if not retry:
+                console.print("\n[red]Keluar tanpa lisensi.[/red]")
+                sys.exit(1)
     
     try:
         while True:
@@ -660,6 +736,9 @@ def main():
             
             elif "Bantuan" in choice:
                 menu_help()
+            
+            elif "Lisensi" in choice:
+                menu_license()
     
     except KeyboardInterrupt:
         console.print("\n[yellow]Dibatalkan.[/yellow]")
