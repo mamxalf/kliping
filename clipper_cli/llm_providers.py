@@ -1,6 +1,6 @@
 """
 LLM Providers for viral analysis.
-Supports Ollama (local, free), OpenAI, and Google Gemini.
+Supports Ollama (local, free), OpenAI, Google Gemini, and Anthropic Claude.
 """
 import os
 from abc import ABC, abstractmethod
@@ -18,12 +18,34 @@ class LLMProvider(str, Enum):
     OLLAMA = "ollama"
     OPENAI = "openai"
     GEMINI = "gemini"
+    CLAUDE = "claude"
 
 
 PROVIDER_DESCRIPTIONS = {
     LLMProvider.OLLAMA: "Ollama (Local, Gratis) - Perlu install Ollama",
-    LLMProvider.OPENAI: "OpenAI GPT-4 (Cloud) - Perlu API key",
-    LLMProvider.GEMINI: "Google Gemini (Cloud) - Perlu API key"
+    LLMProvider.OPENAI: "OpenAI GPT (Cloud) - Perlu API key",
+    LLMProvider.GEMINI: "Google Gemini (Cloud) - Perlu API key",
+    LLMProvider.CLAUDE: "Anthropic Claude (Cloud) - Perlu API key"
+}
+
+# Available models for each provider
+PROVIDER_MODELS = {
+    LLMProvider.OPENAI: [
+        ("gpt-4o", "GPT-4o - Terbaru, powerful"),
+        ("gpt-4o-mini", "GPT-4o Mini - Cepat, murah"),
+        ("gpt-4-turbo", "GPT-4 Turbo - Seimbang"),
+        ("gpt-3.5-turbo", "GPT-3.5 Turbo - Tercepat, termurah"),
+    ],
+    LLMProvider.GEMINI: [
+        ("gemini-2.0-flash", "Gemini 2.0 Flash - Terbaru, cepat"),
+        ("gemini-1.5-pro", "Gemini 1.5 Pro - Powerful"),
+        ("gemini-1.5-flash", "Gemini 1.5 Flash - Seimbang"),
+    ],
+    LLMProvider.CLAUDE: [
+        ("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet - Terbaru, terbaik"),
+        ("claude-3-5-haiku-20241022", "Claude 3.5 Haiku - Cepat, murah"),
+        ("claude-3-opus-20240229", "Claude 3 Opus - Paling powerful"),
+    ]
 }
 
 
@@ -176,17 +198,58 @@ class GeminiProvider(BaseLLMProvider):
         )
 
 
+class ClaudeProvider(BaseLLMProvider):
+    """Anthropic Claude provider."""
+    
+    def __init__(self, model: str = "claude-3-5-sonnet-20241022", api_key: Optional[str] = None):
+        self.model = model
+        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        self._client = None
+    
+    def _get_client(self):
+        if self._client is None:
+            import anthropic
+            self._client = anthropic.Anthropic(api_key=self.api_key)
+        return self._client
+    
+    def is_available(self) -> bool:
+        """Check if API key is available."""
+        return bool(self.api_key)
+    
+    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
+        """Generate response using Claude."""
+        client = self._get_client()
+        
+        kwargs = {
+            "model": self.model,
+            "max_tokens": 4096,
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        
+        if system_prompt:
+            kwargs["system"] = system_prompt
+        
+        response = client.messages.create(**kwargs)
+        
+        return LLMResponse(
+            content=response.content[0].text,
+            model=self.model,
+            provider=LLMProvider.CLAUDE
+        )
+
+
 def get_provider(provider: LLMProvider, **kwargs) -> BaseLLMProvider:
     """Factory function to get LLM provider instance."""
     providers = {
         LLMProvider.OLLAMA: OllamaProvider,
         LLMProvider.OPENAI: OpenAIProvider,
-        LLMProvider.GEMINI: GeminiProvider
+        LLMProvider.GEMINI: GeminiProvider,
+        LLMProvider.CLAUDE: ClaudeProvider
     }
     return providers[provider](**kwargs)
 
 
-def get_available_providers() -> list[tuple[LLMProvider, str]]:
+def get_available_providers(app_config: dict = None) -> list[tuple[LLMProvider, str]]:
     """Get list of available providers with their status."""
     result = []
     
@@ -196,13 +259,19 @@ def get_available_providers() -> list[tuple[LLMProvider, str]]:
     result.append((LLMProvider.OLLAMA, f"{PROVIDER_DESCRIPTIONS[LLMProvider.OLLAMA]} [{ollama_status}]"))
     
     # Check OpenAI
-    openai_provider = OpenAIProvider()
-    openai_status = "✓ API key found" if openai_provider.is_available() else "✗ No API key"
+    has_openai_key = bool(os.getenv("OPENAI_API_KEY") or (app_config and app_config.get("openai_api_key")))
+    openai_status = "✓ API key found" if has_openai_key else "✗ No API key"
     result.append((LLMProvider.OPENAI, f"{PROVIDER_DESCRIPTIONS[LLMProvider.OPENAI]} [{openai_status}]"))
     
     # Check Gemini
-    gemini_provider = GeminiProvider()
-    gemini_status = "✓ API key found" if gemini_provider.is_available() else "✗ No API key"
+    has_gemini_key = bool(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or (app_config and app_config.get("gemini_api_key")))
+    gemini_status = "✓ API key found" if has_gemini_key else "✗ No API key"
     result.append((LLMProvider.GEMINI, f"{PROVIDER_DESCRIPTIONS[LLMProvider.GEMINI]} [{gemini_status}]"))
     
+    # Check Claude
+    has_claude_key = bool(os.getenv("ANTHROPIC_API_KEY") or (app_config and app_config.get("claude_api_key")))
+    claude_status = "✓ API key found" if has_claude_key else "✗ No API key"
+    result.append((LLMProvider.CLAUDE, f"{PROVIDER_DESCRIPTIONS[LLMProvider.CLAUDE]} [{claude_status}]"))
+    
     return result
+

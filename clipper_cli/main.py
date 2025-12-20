@@ -48,7 +48,13 @@ app_config = {
     "max_duration": 60,
     "whisper_model": "base",
     "language": "id",
-    "output_dir": "./clips"
+    "output_dir": "./clips",
+    "openai_api_key": "",
+    "openai_model": "gpt-4o-mini",
+    "gemini_api_key": "",
+    "gemini_model": "gemini-2.0-flash",
+    "claude_api_key": "",
+    "claude_model": "claude-3-5-sonnet-20241022"
 }
 
 
@@ -194,6 +200,7 @@ def menu_settings():
             "📊 Jumlah Clips",
             "⏱️  Durasi Clips",
             "📁 Folder Output",
+            "☁️  API Key Cloud AI",
             "🔙 Kembali"
         ]
         
@@ -271,6 +278,136 @@ def menu_settings():
             if new_path:
                 app_config["output_dir"] = new_path
                 console.print(f"[green]✓ Output folder diubah ke {new_path}[/green]")
+        
+        elif "API Key" in choice:
+            menu_cloud_api()
+
+
+def menu_cloud_api():
+    """Configure cloud AI API keys and models."""
+    from .llm_providers import PROVIDER_MODELS, LLMProvider
+    
+    while True:
+        clear_screen()
+        console.print("[bold cyan]☁️  KONFIGURASI CLOUD AI[/bold cyan]\n")
+        
+        # Show current status
+        openai_status = "✓ Configured" if app_config.get("openai_api_key") else "✗ Not set"
+        gemini_status = "✓ Configured" if app_config.get("gemini_api_key") else "✗ Not set"
+        claude_status = "✓ Configured" if app_config.get("claude_api_key") else "✗ Not set"
+        
+        # Also check env vars
+        if os.getenv("OPENAI_API_KEY"):
+            openai_status = "✓ From ENV"
+        if os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"):
+            gemini_status = "✓ From ENV"
+        if os.getenv("ANTHROPIC_API_KEY"):
+            claude_status = "✓ From ENV"
+        
+        console.print(f"[bold]Status API Key & Model:[/bold]")
+        console.print(f"  • OpenAI: [{('green' if '✓' in openai_status else 'red')}]{openai_status}[/] | Model: [cyan]{app_config.get('openai_model', 'gpt-4o-mini')}[/cyan]")
+        console.print(f"  • Gemini: [{('green' if '✓' in gemini_status else 'red')}]{gemini_status}[/] | Model: [cyan]{app_config.get('gemini_model', 'gemini-2.0-flash')}[/cyan]")
+        console.print(f"  • Claude: [{('green' if '✓' in claude_status else 'red')}]{claude_status}[/] | Model: [cyan]{app_config.get('claude_model', 'claude-3-5-sonnet-20241022')}[/cyan]")
+        console.print("")
+        
+        choices = [
+            "🔑 Set OpenAI API Key",
+            "🤖 Pilih OpenAI Model",
+            "🔑 Set Google Gemini API Key",
+            "🤖 Pilih Gemini Model",
+            "� Set Anthropic Claude API Key",
+            "🤖 Pilih Claude Model",
+            "🗑️  Hapus Semua Key",
+            "🔙 Kembali"
+        ]
+        
+        choice = questionary.select(
+            "Pilih aksi:",
+            choices=choices,
+            style=custom_style
+        ).ask()
+        
+        if not choice or "Kembali" in choice:
+            break
+        
+        if "Set OpenAI" in choice:
+            console.print("\n[dim]Dapatkan API key di: https://platform.openai.com/api-keys[/dim]")
+            api_key = questionary.password(
+                "Masukkan OpenAI API Key:",
+                style=custom_style
+            ).ask()
+            if api_key:
+                app_config["openai_api_key"] = api_key
+                console.print("[green]✓ OpenAI API Key tersimpan![/green]")
+                time.sleep(1)
+        
+        elif "Pilih OpenAI Model" in choice:
+            models = PROVIDER_MODELS.get(LLMProvider.OPENAI, [])
+            model_choices = [f"{m[0]} - {m[1]}" for m in models]
+            selected = questionary.select(
+                "Pilih model OpenAI:",
+                choices=model_choices,
+                style=custom_style
+            ).ask()
+            if selected:
+                app_config["openai_model"] = selected.split(" - ")[0]
+                console.print(f"[green]✓ Model OpenAI: {app_config['openai_model']}[/green]")
+                time.sleep(1)
+        
+        elif "Set Google" in choice:
+            console.print("\n[dim]Dapatkan API key di: https://aistudio.google.com/apikey[/dim]")
+            api_key = questionary.password(
+                "Masukkan Google Gemini API Key:",
+                style=custom_style
+            ).ask()
+            if api_key:
+                app_config["gemini_api_key"] = api_key
+                console.print("[green]✓ Gemini API Key tersimpan![/green]")
+                time.sleep(1)
+        
+        elif "Pilih Gemini Model" in choice:
+            models = PROVIDER_MODELS.get(LLMProvider.GEMINI, [])
+            model_choices = [f"{m[0]} - {m[1]}" for m in models]
+            selected = questionary.select(
+                "Pilih model Gemini:",
+                choices=model_choices,
+                style=custom_style
+            ).ask()
+            if selected:
+                app_config["gemini_model"] = selected.split(" - ")[0]
+                console.print(f"[green]✓ Model Gemini: {app_config['gemini_model']}[/green]")
+                time.sleep(1)
+        
+        elif "Set Anthropic" in choice:
+            console.print("\n[dim]Dapatkan API key di: https://console.anthropic.com/settings/keys[/dim]")
+            api_key = questionary.password(
+                "Masukkan Anthropic API Key:",
+                style=custom_style
+            ).ask()
+            if api_key:
+                app_config["claude_api_key"] = api_key
+                console.print("[green]✓ Claude API Key tersimpan![/green]")
+                time.sleep(1)
+        
+        elif "Pilih Claude Model" in choice:
+            models = PROVIDER_MODELS.get(LLMProvider.CLAUDE, [])
+            model_choices = [f"{m[0]} - {m[1]}" for m in models]
+            selected = questionary.select(
+                "Pilih model Claude:",
+                choices=model_choices,
+                style=custom_style
+            ).ask()
+            if selected:
+                app_config["claude_model"] = selected.split(" - ")[0]
+                console.print(f"[green]✓ Model Claude: {app_config['claude_model']}[/green]")
+                time.sleep(1)
+        
+        elif "Hapus Semua" in choice:
+            app_config["openai_api_key"] = ""
+            app_config["gemini_api_key"] = ""
+            app_config["claude_api_key"] = ""
+            console.print("[yellow]Semua API Key dihapus.[/yellow]")
+            time.sleep(1)
 
 
 def menu_ollama():
@@ -497,7 +634,7 @@ def run_clip_video():
     # Step 3: Select LLM
     console.print("\n[bold]🧠 Pilih AI untuk Analisis[/bold]")
     
-    providers = get_available_providers()
+    providers = get_available_providers(app_config)
     choices = [desc for _, desc in providers]
     
     selected = questionary.select(
@@ -552,7 +689,15 @@ def run_clip_video():
             return
     
     elif provider == LLMProvider.OPENAI:
-        if not os.getenv("OPENAI_API_KEY"):
+        # Check stored key first, then env var
+        stored_key = app_config.get("openai_api_key", "")
+        env_key = os.getenv("OPENAI_API_KEY", "")
+        
+        if stored_key:
+            provider_kwargs["api_key"] = stored_key
+        elif env_key:
+            pass  # Will use env var automatically
+        else:
             api_key = questionary.password(
                 "Masukkan OpenAI API key:",
                 style=custom_style
@@ -561,9 +706,20 @@ def run_clip_video():
                 provider_kwargs["api_key"] = api_key
             else:
                 return
+        
+        # Use stored model
+        provider_kwargs["model"] = app_config.get("openai_model", "gpt-4o-mini")
     
     elif provider == LLMProvider.GEMINI:
-        if not os.getenv("GOOGLE_API_KEY") and not os.getenv("GEMINI_API_KEY"):
+        # Check stored key first, then env var
+        stored_key = app_config.get("gemini_api_key", "")
+        env_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+        
+        if stored_key:
+            provider_kwargs["api_key"] = stored_key
+        elif env_key:
+            pass  # Will use env var automatically
+        else:
             api_key = questionary.password(
                 "Masukkan Google API key:",
                 style=custom_style
@@ -572,6 +728,31 @@ def run_clip_video():
                 provider_kwargs["api_key"] = api_key
             else:
                 return
+        
+        # Use stored model
+        provider_kwargs["model"] = app_config.get("gemini_model", "gemini-2.0-flash")
+    
+    elif provider == LLMProvider.CLAUDE:
+        # Check stored key first, then env var
+        stored_key = app_config.get("claude_api_key", "")
+        env_key = os.getenv("ANTHROPIC_API_KEY")
+        
+        if stored_key:
+            provider_kwargs["api_key"] = stored_key
+        elif env_key:
+            pass  # Will use env var automatically
+        else:
+            api_key = questionary.password(
+                "Masukkan Anthropic API key:",
+                style=custom_style
+            ).ask()
+            if api_key:
+                provider_kwargs["api_key"] = api_key
+            else:
+                return
+        
+        # Use stored model
+        provider_kwargs["model"] = app_config.get("claude_model", "claude-3-5-sonnet-20241022")
     
     # Step 4: Analyze
     console.print("\n[bold]📊 Analisis Viral[/bold]")
