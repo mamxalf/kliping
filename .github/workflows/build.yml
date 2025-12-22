@@ -1,4 +1,4 @@
-name: Build Windows Executable
+name: Build Executables
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - 'v*'
   pull_request:
     branches: [main]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -30,27 +30,23 @@ jobs:
           virtualenvs-in-project: true
       
       - name: Install dependencies
-        run: |
-          cd clipper-cli
-          poetry install --with dev
+        run: poetry install --with dev
       
       - name: Build with PyInstaller
-        run: |
-          cd clipper-cli
-          poetry run pyinstaller build.spec
+        run: poetry run pyinstaller build.spec
       
       - name: Upload Windows executable
         uses: actions/upload-artifact@v4
         with:
           name: clipper-windows
-          path: clipper-cli/dist/clipper.exe
+          path: dist/clipper.exe
           if-no-files-found: error
       
       - name: Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          files: clipper-cli/dist/clipper.exe
+          files: dist/clipper.exe
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,27 +71,23 @@ jobs:
           virtualenvs-in-project: true
       
       - name: Install dependencies
-        run: |
-          cd clipper-cli
-          poetry install --with dev
+        run: poetry install --with dev
       
       - name: Build with PyInstaller
-        run: |
-          cd clipper-cli
-          poetry run pyinstaller build.spec
+        run: poetry run pyinstaller build.spec
       
       - name: Upload macOS executable
         uses: actions/upload-artifact@v4
         with:
           name: clipper-macos
-          path: clipper-cli/dist/clipper
+          path: dist/clipper
           if-no-files-found: error
       
       - name: Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          files: clipper-cli/dist/clipper
+          files: dist/clipper
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -120,27 +112,25 @@ jobs:
           virtualenvs-in-project: true
       
       - name: Install dependencies
-        run: |
-          cd clipper-cli
-          poetry install --with dev
+        run: poetry install --with dev
       
       - name: Build with PyInstaller
-        run: |
-          cd clipper-cli
-          poetry run pyinstaller build.spec
+        run: poetry run pyinstaller build.spec
       
       - name: Upload Linux executable
         uses: actions/upload-artifact@v4
         with:
           name: clipper-linux
-          path: clipper-cli/dist/clipper
+          path: dist/clipper
           if-no-files-found: error
       
       - name: Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          files: clipper-cli/dist/clipper
+          files: dist/clipper
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
