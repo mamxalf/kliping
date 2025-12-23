@@ -6,30 +6,36 @@ Build with: pyinstaller build.spec
 
 import sys
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_submodules
 
 block_cipher = None
 
 # Get the directory containing this spec file
 spec_dir = Path(SPECPATH)
 
+# Collect all submodules from clipper_cli package
+hiddenimports = collect_submodules('clipper_cli')
+hiddenimports += [
+    'faster_whisper',
+    'ctranslate2',
+    'huggingface_hub',
+    'tokenizers',
+    'questionary',
+    'prompt_toolkit',
+    'rich',
+    'ollama',
+    'openai',
+    'google.generativeai',
+    'anthropic',
+    'ffmpeg',
+]
+
 a = Analysis(
-    ['clipper_cli/main.py'],
+    ['clipper_cli/__main__.py'],
     pathex=[str(spec_dir)],
     binaries=[],
     datas=[],
-    hiddenimports=[
-        'faster_whisper',
-        'ctranslate2',
-        'huggingface_hub',
-        'tokenizers',
-        'questionary',
-        'prompt_toolkit',
-        'rich',
-        'ollama',
-        'openai',
-        'google.generativeai',
-        'ffmpeg',
-    ],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
