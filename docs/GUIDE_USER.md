@@ -58,13 +58,13 @@ Saat pertama kali menjalankan, Anda akan diminta memasukkan serial key.
 🔐 AKTIVASI LISENSI
 
 Software ini membutuhkan lisensi untuk digunakan.
-Hubungi admin untuk mendapatkan serial key.
+Hubungi admin (085727617995) untuk mendapatkan serial key.
 
 ? Masukkan Serial Key (XXXX-XXXX-XXXX-XXXX): _
 ```
 
 ### Langkah-langkah:
-1. Hubungi seller/admin untuk mendapatkan serial key
+1. Hubungi seller/admin (085727617995) untuk mendapatkan serial key
 2. Masukkan serial key dalam format `XXXX-XXXX-XXXX-XXXX`
 3. Tekan Enter
 4. Jika berhasil, lisensi akan tersimpan otomatis
@@ -176,7 +176,7 @@ Ollama harus berjalan saat menggunakan Clipper:
 ### ❓ Serial key tidak berfungsi?
 - Pastikan format benar: `XXXX-XXXX-XXXX-XXXX`
 - Gunakan huruf kapital
-- Hubungi admin untuk konfirmasi
+- Hubungi admin untuk konfirmasi (085727617995)
 
 ### ❓ Transcription sangat lambat?
 - Gunakan model `tiny` atau `base` untuk video panjang
@@ -201,3 +201,6 @@ Ollama harus berjalan saat menggunakan Clipper:
 ## 💬 Dukungan
 
 Hubungi seller untuk bantuan lebih lanjut.
+
+Whatsapp (085727617995)
+Email (motifakes@gmail.com)
